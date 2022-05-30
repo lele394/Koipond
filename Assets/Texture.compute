@@ -1,0 +1,140 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+#include "noiseSimplex.cginc"
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+Texture2D<float4> Mask;
+
+float1 R;
+float1 G;
+float1 B;
+
+float width;
+float height;
+
+float zoom;
+float xoffset;
+float yoffset;
+
+float xstretch;
+float ystretch;
+//paliers
+float Palier1;
+float Palier2;
+float Palier3;
+//couleurs
+float3 col1;
+float3 col2;
+float3 col3;
+float3 col4;
+
+
+float zoom2;
+float xoffset2;
+float yoffset2;
+
+float xstretch2;
+float ystretch2;
+//paliers
+float Palier12;
+float Palier22;
+float Palier32;
+//couleurs
+float3 col12;
+float3 col22;
+float3 col32;
+float3 col42;
+
+
+float transparency;
+float background;
+
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+
+    background = 0.0f;
+
+    float3 color = float3(0.0f,0.0f,0.0f);
+    //float3 color2 = float3(0.0f,0.0f,0.0f);
+
+
+    float x = id.x;
+    float y = id.y;
+
+    //R = x/1000;
+    //G = y/1000;
+    //B = x*y/1000;
+
+
+
+    double nx =(( x/width*xstretch )+xoffset)*zoom, ny = ((y/height*ystretch )+yoffset)*zoom;
+
+    float val = snoise(float2(nx, ny));
+
+
+    if(val<Palier3){
+      if(val<Palier2){
+        if(val<Palier1){
+          color = col1;
+          background=1.0f;
+        }
+        else{
+          color = col2;
+        }
+      }
+      else{
+        color = col3;
+      }
+    }
+    else{
+      color = col4;
+    }
+
+
+
+    double nx2 =(( x/width*xstretch2 )+xoffset2)*zoom2, ny2 = ((y/height*ystretch2 )+yoffset2)*zoom2;
+    float val2 = snoise(float2(nx2, ny2));
+
+    if(background == 1.0f)
+    {
+      if(val2<Palier32){
+        if(val2<Palier22){
+          if(val2<Palier12){
+            color = color;
+          }
+          else{
+            color = col22;
+          }
+        }
+        else{
+          color = col32;
+        }
+      }
+      else{
+        color = col42;
+      }
+    }
+
+
+
+
+
+
+
+
+
+
+
+    if(val2==0.0){color = float3(-  1.0,- 1.0,- 1.0);}
+
+
+
+
+
+
+
+    Result[id.xy] =float4(color[0], color[1], color[2], Mask[id.xy][3]);
+}
